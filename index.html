@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#ff6b35" />
+  <title>扫码点餐</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- 点餐视图 -->
+  <div id="orderView">
+    <div class="topbar">
+      <div class="title">🍽️ 扫码点餐</div>
+      <div class="table" id="tableBadge">桌号 --</div>
+    </div>
+
+    <div class="cats" id="cats"></div>
+    <div id="menu"></div>
+
+    <div class="cartbar" id="cartbar">
+      <div class="icon">🛒<span class="badge hidden" id="badge">0</span></div>
+      <div class="total" id="total">未选购<small></small></div>
+      <button class="submit" id="submitBtn" disabled>去结算</button>
+    </div>
+
+    <div class="drawer-mask" id="drawerMask"></div>
+    <div class="drawer" id="drawer">
+      <div class="head">
+        <span>已选商品</span>
+        <button class="clear" id="clearCart">清空</button>
+      </div>
+      <div class="list" id="cartList"></div>
+      <div class="note-box">
+        <input id="orderNote" type="text" placeholder="订单备注（如：不要香菜、少冰）" maxlength="50" />
+      </div>
+      <div class="foot">
+        <button class="submit" id="drawerSubmit" style="width:100%;border-radius:10px;">提交订单</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 订单跟踪视图 -->
+  <div id="trackView" class="hidden">
+    <div class="topbar">
+      <div class="title">订单状态</div>
+      <div class="table" id="trackTable">桌号 --</div>
+    </div>
+    <div class="track">
+      <div class="ok" id="trackOk">✅</div>
+      <div class="no" id="trackNo">订单提交成功</div>
+      <div class="amount" id="trackAmount"></div>
+      <div class="paid-badge hidden" id="paidBadge">已支付</div>
+      <div class="steps" id="trackSteps"></div>
+      <div class="track-actions">
+        <button class="btn-ghost" id="urgeBtn">🔔 催单</button>
+        <button class="btn-ghost" id="addBtn">➕ 加菜</button>
+        <button class="btn-ghost" id="payBtn">💰 去支付</button>
+        <button class="btn-ghost" id="printBtn">🖨️ 打印小票</button>
+        <button class="btn-ghost" id="backBtn">继续点餐</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 支付弹窗（沙箱） -->
+  <div class="drawer-mask" id="payMask"></div>
+  <div class="drawer pay-drawer" id="payDrawer">
+    <div class="head"><span>选择支付方式</span><button class="clear" id="payClose">关闭</button></div>
+    <div class="pay-body">
+      <div class="pay-methods">
+        <button class="pay-method" data-method="wechat">💚 微信支付</button>
+        <button class="pay-method" data-method="alipay">💙 支付宝</button>
+      </div>
+      <div id="payInfo" class="pay-info hidden">
+        <div class="pay-qr" id="payQr">▦</div>
+        <div class="pay-url" id="payUrl"></div>
+        <div class="pay-sandbox">沙箱环境 · 点击下方模拟支付成功</div>
+        <button class="submit" id="payMock" style="width:100%;border-radius:10px;margin-top:10px;">模拟支付成功</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 打印小票（仅打印时可见） -->
+  <div id="receipt" class="hidden"></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

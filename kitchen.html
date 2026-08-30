@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#ff6b35" />
+  <title>后厨接单</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="kitchen">
+  <div class="khead">
+    <div class="t">👨‍🍳 后厨接单台</div>
+    <button class="clear" id="clearDone">清理已完成</button>
+  </div>
+  <div class="kcols" id="kcols">
+    <div class="kcol">
+      <h3>待制作 / 制作中</h3>
+      <div id="colActive"></div>
+    </div>
+    <div class="kcol">
+      <h3>已出餐 / 已完成</h3>
+      <div id="colDone"></div>
+    </div>
+  </div>
+  <div class="empty hidden" id="emptyTip">暂无订单</div>
+
+  <script type="module" src="js/kitchen.js"></script>
+</body>
+</html>
