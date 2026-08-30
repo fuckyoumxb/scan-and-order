@@ -1,4 +1,8 @@
-import { MenuStore } from "./api.js";
+import { MenuStore, uploadImage } from "./api.js";
+
+function esc(s) {
+  return String(s == null ? "" : s).replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
 
 const FALLBACK = [
   { category: "招牌热菜", items: [{ id: "h1", name: "红烧肉", desc: "肥而不腻", price: 38, emoji: "🍖", img: "" }] }
@@ -30,18 +34,43 @@ function render() {
       const row = document.createElement("div");
       row.className = "it-row";
       row.innerHTML = `
-        <input class="emoji-in" value="${it.emoji || ""}" maxlength="2" />
-        <input class="name-in" value="${it.name}" placeholder="名称" />
+        <input class="emoji-in" value="${esc(it.emoji)}" maxlength="2" />
+        <input class="name-in" value="${esc(it.name)}" placeholder="名称" />
         <input class="price-in" type="number" value="${it.price}" placeholder="价格" />
         <button class="del">✕</button>
-        <input class="desc-in" value="${it.desc || ""}" placeholder="描述" />
-        <input class="img-in" value="${it.img || ""}" placeholder="图片URL（可选）" />`;
-      const [emojiIn, nameIn, priceIn, del, descIn, imgIn] = row.children;
+        <input class="desc-in" value="${esc(it.desc)}" placeholder="描述" />
+        <div class="img-row">
+          <input class="img-in" value="${esc(it.img)}" placeholder="图片URL（可选）" />
+          <input class="img-file" type="file" accept="image/*" />
+          <img class="img-thumb" ${it.img ? `src="${esc(it.img)}"` : ""} alt="" />
+        </div>`;
+      const emojiIn = row.querySelector(".emoji-in");
+      const nameIn = row.querySelector(".name-in");
+      const priceIn = row.querySelector(".price-in");
+      const del = row.querySelector(".del");
+      const descIn = row.querySelector(".desc-in");
+      const imgIn = row.querySelector(".img-in");
+      const imgFile = row.querySelector(".img-file");
+      const thumb = row.querySelector(".img-thumb");
       emojiIn.oninput = () => (it.emoji = emojiIn.value);
       nameIn.oninput = () => (it.name = nameIn.value);
       priceIn.oninput = () => (it.price = Number(priceIn.value) || 0);
       descIn.oninput = () => (it.desc = descIn.value);
-      imgIn.oninput = () => (it.img = imgIn.value);
+      imgIn.oninput = () => { it.img = imgIn.value; if (it.img) thumb.src = it.img; };
+      // 自主上传菜品图片 → Supabase Storage
+      imgFile.onchange = async () => {
+        const f = imgFile.files && imgFile.files[0];
+        if (!f) return;
+        toast("上传中…");
+        try {
+          const url = await uploadImage(f);
+          it.img = url; imgIn.value = url; thumb.src = url;
+          toast("图片已上传，记得点保存");
+        } catch (e) {
+          console.error(e);
+          toast("上传失败：" + (e.message || e));
+        }
+      };
       del.onclick = () => { cat.items.splice(ii, 1); render(); };
       card.appendChild(row);
     });

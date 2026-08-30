@@ -1,5 +1,6 @@
 import { MENU as FALLBACK_MENU, STATUS, STATUS_FLOW } from "./menu.js";
 import { OrderStore, MenuStore, createPay, paySuccess } from "./api.js";
+import QRCode from "https://esm.sh/qrcode@1.5.3";
 
 const params = new URLSearchParams(location.search);
 const table = params.get("table") || "0";
@@ -203,10 +204,26 @@ document.getElementById("backBtn").onclick = () => {
 };
 
 // 支付弹窗
-document.getElementById("payBtn").onclick = () => {
-  document.getElementById("payInfo").classList.add("hidden");
+document.getElementById("payBtn").onclick = async () => {
+  if (!currentOrderId) return;
   document.getElementById("payMask").classList.add("open");
   document.getElementById("payDrawer").classList.add("open");
+  const r = await createPay(currentOrderId);
+  if (r.code_url) {
+    document.getElementById("payDemo").classList.add("hidden");
+    document.getElementById("payMock").classList.add("hidden");
+    try {
+      document.getElementById("payQr").src = await QRCode.toDataURL(r.code_url, { width: 220, margin: 1 });
+    } catch (e) { document.getElementById("payQr").alt = "二维码生成失败"; }
+    document.getElementById("payTip").textContent = "请用微信「扫一扫」完成支付";
+  } else {
+    // 演示模式（未部署微信支付 Edge Function / 未配置密钥）
+    document.getElementById("payDemo").classList.remove("hidden");
+    document.getElementById("payMock").classList.remove("hidden");
+    document.getElementById("payQr").removeAttribute("src");
+    document.getElementById("payQr").alt = "演示模式";
+    document.getElementById("payTip").textContent = "演示模式：未接入微信支付";
+  }
 };
 document.getElementById("payClose").onclick = closePay;
 document.getElementById("payMask").onclick = closePay;
@@ -214,15 +231,6 @@ function closePay() {
   document.getElementById("payMask").classList.remove("open");
   document.getElementById("payDrawer").classList.remove("open");
 }
-document.querySelectorAll(".pay-method").forEach((btn) => {
-  btn.onclick = async () => {
-    if (!currentOrderId) return;
-    const r = await createPay(currentOrderId, btn.dataset.method);
-    document.getElementById("payUrl").textContent = r.payUrl;
-    document.getElementById("payQr").textContent = "▦ " + (r.method === "wechat" ? "微信" : "支付宝");
-    document.getElementById("payInfo").classList.remove("hidden");
-  };
-});
 document.getElementById("payMock").onclick = async () => {
   if (!currentOrderId) return;
   await paySuccess(currentOrderId);
@@ -264,7 +272,11 @@ document.getElementById("drawerSubmit").onclick = submitOrder;
 OrderStore.subscribe((orders) => {
   if (currentOrderId) {
     const o = orders.find((x) => x.id === currentOrderId);
-    if (o) renderTrack(o);
+    if (o) {
+      renderTrack(o);
+      // 真实支付回调置 paid 后，自动关闭支付弹窗
+      if (o.paid && document.getElementById("payDrawer").classList.contains("open")) closePay();
+    }
   }
 });
 

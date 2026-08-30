@@ -74,3 +74,18 @@ create policy "orders public read"  on orders for select using (true);
 create policy "orders public write" on orders for insert with check (true);
 create policy "orders public write" on orders for update using (true);
 create policy "orders public write" on orders for delete using (true);
+
+-- 6) 菜品图片存储桶（公开读、匿名上传）。后台可自主上传菜品图片。
+insert into storage.buckets (id, name, public)
+values ('dish-images', 'dish-images', true)
+on conflict (id) do nothing;
+
+drop policy if exists "dish-images public read"   on storage.objects;
+drop policy if exists "dish-images public upload" on storage.objects;
+drop policy if exists "dish-images public update" on storage.objects;
+drop policy if exists "dish-images public delete" on storage.objects;
+
+create policy "dish-images public read"   on storage.objects for select to anon using (bucket_id = 'dish-images');
+create policy "dish-images public upload" on storage.objects for insert to anon with check (bucket_id = 'dish-images');
+create policy "dish-images public update" on storage.objects for update to anon using (bucket_id = 'dish-images');
+create policy "dish-images public delete" on storage.objects for delete to anon using (bucket_id = 'dish-images');

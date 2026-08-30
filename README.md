@@ -99,6 +99,44 @@ PORT=4173 node server/server.js
 要让前端走本地后端而非 Supabase，把 `js/config.js` 的 URL 留空（置为 `""`）即可自动回退到本地兜底菜单；
 但订单/同步仍需后端，因此**推荐直接使用 Supabase 方案**。
 
+## 菜品图片自主上传
+后台 `admin.html` 每个菜品支持**选择本地图片文件**直接上传：
+1. 建表 SQL 已创建公开存储桶 `dish-images` 并放开匿名上传策略；
+2. 后台点「选择文件」→ 图片自动上传到 Supabase Storage → 得到公开 URL 写入该菜品 `img`；
+3. 点「保存并同步到前台」，顾客端立即显示该图片（无图时回退 emoji）。
+
+> 如需限制仅管理员可上传，把 `schema.sql` 里 `dish-images public upload` 策略改为基于登录用户的 RLS。
+
+## 接入真实微信支付（Native 扫码付）
+支付走 **Supabase Edge Function**（`supabase/functions/wechat-pay/index.ts`），商户密钥只存放在服务端（Supabase Secrets），前端永不接触。
+
+1. 本地安装 Supabase CLI 并登录：`npm i -g supabase && supabase login`
+2. 部署函数：
+   ```bash
+   supabase functions deploy wechat-pay
+   ```
+3. 配置商户密钥（Supabase 控制台 → Project Settings → Edge Functions → Secrets，或命令行）：
+   ```bash
+   supabase secrets set WECHAT_APPID=你的AppID \
+     WECHAT_MCHID=你的商户号 \
+     WECHAT_APIV3_KEY=你的APIv3密钥 \
+     WECHAT_SERIAL_NO=你的证书序列号 \
+     WECHAT_PRIVATE_KEY="$(cat 你的私钥文件.pem)"
+   ```
+4. 在微信商户平台把回调地址 `https://<你的项目>.supabase.co/functions/v1/wechat-pay?action=notify` 加入支付回调域名白名单。
+5. 完成后顾客端「去支付」会生成**微信扫码付二维码**，顾客用微信扫一扫付款；
+   微信异步回调解密后把订单 `paid` 置 `true`，顾客端/后厨端实时刷新。
+
+> 未部署函数或密钥未配置时，前端自动降级为「模拟支付成功」，不影响其他流程演示。
+
+## 桌码二维码
+桌码二维码（`qrcodes/table-12.png`）在仓库上传到 GitHub Pages 之后，用实际站点地址重新生成：
+```bash
+# 把 <你的站点地址> 换成 https://<用户名>.github.io/<仓库名>/
+python gen_table_qr.py --base <你的站点地址>
+```
+
 ## 说明
 - 演示用 RLS 允许匿名读写，便于快速体验；生产环境请为 `orders` 增加 auth / 门店隔离策略。
 - 订单与菜单均存于 Supabase 云端，刷新 / 换设备 / 多人操作均实时一致。
+- 微信支付相关密钥仅存在于 Supabase Secrets，请妥善保管，不要提交到仓库。

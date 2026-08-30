@@ -169,11 +169,42 @@ function ensureMenuSub() {
     .subscribe();
 }
 
-// ---------------------- 支付（演示，无真实商户号）----------------------
-// 接入真实微信/支付宝时：在后端用 supabase 的 service_role 调用统一下单，
-// 前端用 createPay 拿到 payUrl 展示二维码，支付回调里把对应订单 paid 置 true。
-export async function createPay(orderId, method) {
-  return { orderId, method, payUrl: "demo://pay/" + method + "/" + orderId };
+// ---------------------- 菜品图片上传（Supabase Storage）----------------------
+export async function uploadImage(file) {
+  if (!supabase) throw new Error("Supabase 未配置");
+  const ext = (file.name.split(".").pop() || "png").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const path = "dishes/" + Date.now() + "_" + Math.random().toString(36).slice(2, 8) + "." + ext;
+  const { error } = await supabase.storage
+    .from("dish-images")
+    .upload(path, file, { upsert: false, contentType: file.type || "image/png" });
+  if (error) throw error;
+  const { data } = supabase.storage.from("dish-images").getPublicUrl(path);
+  return data.publicUrl;
+}
+
+// ---------------------- 支付（微信 Native 扫码付）----------------------
+// 调用 Supabase Edge Function `wechat-pay` 创建 Native 订单，返回 { code_url }；
+// 未部署 / 未配置密钥时返回 { demo:true }，前端降级为「模拟支付成功」。
+// 真实支付结果由微信异步回调（Edge Function /notify）解密后置 paid=true。
+export async function createPay(orderId) {
+  const o = OrderStore.get(orderId);
+  if (!o) throw new Error("订单不存在");
+  if (!supabase) return { demo: true };
+  try {
+    const { data, error } = await supabase.functions.invoke("wechat-pay", {
+      body: {
+        action: "create",
+        orderId: o.id,
+        table: o.table,
+        totalFen: Math.round((o.total || 0) * 100)
+      }
+    });
+    if (error) return { demo: true };
+    return data && data.code_url ? data : { demo: true };
+  } catch (e) {
+    console.warn("调用微信支付失败，降级演示模式", e);
+    return { demo: true };
+  }
 }
 export async function paySuccess(orderId) {
   return OrderStore.update(orderId, { paid: true });

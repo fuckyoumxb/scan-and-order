@@ -19,7 +19,7 @@ const ASSETS = [
   "icons/icon-maskable-512.png"
 ];
 // Supabase JS（来自 CDN，首次加载后缓存，便于离线启动 SDK；实际数据库读写仍需联网）
-const CDN = ["https://esm.sh/@supabase/supabase-js@2"];
+const CDN = ["https://esm.sh/@supabase/supabase-js@2", "https://esm.sh/qrcode@1.5.3"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
