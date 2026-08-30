@@ -25,6 +25,22 @@ create table if not exists orders (
 );
 create index if not exists orders_created_at_idx on orders (created_at);
 
+-- 2.5) 每日点餐序号：按自然日从 1 自增，由触发器自动分配。
+--      顾客无需桌号，下单后即为「今日第 N 单」，避免前端手动计数并发出错。
+alter table orders add column if not exists daily_seq int;
+create or replace function set_daily_seq() returns trigger as $$
+begin
+  new.daily_seq := coalesce(
+    (select max(daily_seq) from orders where created_at::date = current_date), 0
+  ) + 1;
+  return new;
+end;
+$$ language plpgsql;
+drop trigger if exists trg_daily_seq on orders;
+create trigger trg_daily_seq
+  before insert on orders
+  for each row execute function set_daily_seq();
+
 -- 3) 默认菜单种子（仅首次写入；已存在则不覆盖，方便你后台自定义）
 insert into menu (id, data) values (1, '[
   {"category":"招牌热菜","items":[

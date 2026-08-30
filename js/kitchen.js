@@ -23,7 +23,7 @@ function orderCard(o) {
   card.style.borderLeftColor = STATUS[o.status].color;
   card.innerHTML = `
     <div class="meta">
-      <span class="tbl">桌号 ${o.table} ${urge}</span>
+      <span class="tbl">今日第 ${o.dailySeq != null ? o.dailySeq : "?"} 单 ${urge}</span>
       <span>${fmtTime(o.createdAt)} · ${o.id} ${paid}</span>
     </div>
     ${lines}
@@ -51,8 +51,8 @@ function printReceipt(o) {
   }
   el.classList.remove("hidden");
   el.innerHTML = `
-    <div class="r-shop">扫码点餐 · 后厨小票</div>
-    <div class="r-meta">桌号 ${o.table}　${new Date(o.createdAt).toLocaleString("zh-CN")}</div>
+    <div class="r-shop">线上点餐 · 后厨小票</div>
+    <div class="r-meta">今日第 ${o.dailySeq != null ? o.dailySeq : "?"} 单　${new Date(o.createdAt).toLocaleString("zh-CN")}</div>
     <div class="r-meta">订单号 ${o.id}</div>
     <hr/>
     ${lines}

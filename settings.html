@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#ff6b35" />
+  <title>连接设置</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="settings">
+  <div class="shead">⚙️ Supabase 连接设置</div>
+
+  <div class="scard">
+    <label>Project URL</label>
+    <input id="url" placeholder="https://xxxx.supabase.co" autocomplete="off" spellcheck="false" />
+
+    <label>anon public key</label>
+    <input id="key" placeholder="eyJhbGciOi..." autocomplete="off" spellcheck="false" />
+
+    <div class="hint">
+      在 Supabase 控制台 → <b>Project Settings → API</b> 获取。<br />
+      此信息仅保存在<b>本机浏览器</b>（localStorage），不会上传给任何人，刷新/换设备需重新填写。
+    </div>
+
+    <button class="submit" id="saveBtn">保存并连接</button>
+    <button class="btn-ghost" id="testBtn">仅测试连接</button>
+    <div id="msg"></div>
+  </div>
+
+  <a class="back" href="index.html">← 返回点餐</a>
+
+  <script type="module" src="js/settings.js"></script>
+</body>
+</html>

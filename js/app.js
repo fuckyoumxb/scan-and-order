@@ -2,11 +2,7 @@ import { MENU as FALLBACK_MENU, STATUS, STATUS_FLOW } from "./menu.js";
 import { OrderStore, MenuStore, createPay, paySuccess } from "./api.js";
 import QRCode from "https://esm.sh/qrcode@1.5.3";
 
-const params = new URLSearchParams(location.search);
-const table = params.get("table") || "0";
-document.getElementById("tableBadge").textContent = "桌号 " + table;
-document.getElementById("trackTable").textContent = "桌号 " + table;
-
+// 线上点餐：不再按桌号。下单后订单自动获得「今日第 N 单」序号（由数据库触发器分配）。
 let MENU = FALLBACK_MENU;
 const cart = {};
 let currentOrderId = null;
@@ -153,7 +149,7 @@ async function submitOrder() {
     const id = addingToOrderId; addingToOrderId = null;
     resetCart(); showTrack(id);
   } else {
-    const order = await OrderStore.add({ table, items, total: cartTotal(), count, note });
+    const order = await OrderStore.add({ items, total: cartTotal(), count, note });
     resetCart(); showTrack(order.id);
   }
 }
@@ -166,13 +162,17 @@ function resetCart() {
 // ---------- 订单跟踪 ----------
 function showTrack(id) {
   currentOrderId = id;
+  const o = OrderStore.get(id);
+  const seq = o && o.dailySeq != null ? o.dailySeq : "—";
+  document.getElementById("seqBadge").textContent = "今日第 " + seq + " 单";
+  document.getElementById("trackSeq").textContent = "今日第 " + seq + " 单";
   document.getElementById("orderView").classList.add("hidden");
   document.getElementById("trackView").classList.remove("hidden");
-  renderTrack(OrderStore.get(id));
+  renderTrack(o);
 }
 function renderTrack(order) {
   if (!order) return;
-  document.getElementById("trackNo").textContent = "订单 " + order.id;
+  document.getElementById("trackNo").textContent = "今日第 " + (order.dailySeq != null ? order.dailySeq : "—") + " 单";
   document.getElementById("trackAmount").textContent = `共 ${order.count} 件 · 合计 ¥${order.total}`;
   document.getElementById("paidBadge").classList.toggle("hidden", !order.paid);
   const steps = document.getElementById("trackSteps");
@@ -246,8 +246,8 @@ document.getElementById("printBtn").onclick = () => {
   const el = document.getElementById("receipt");
   el.classList.remove("hidden");
   el.innerHTML = `
-    <div class="r-shop">扫码点餐 · 小票</div>
-    <div class="r-meta">桌号 ${o.table}　${new Date(o.createdAt).toLocaleString("zh-CN")}</div>
+    <div class="r-shop">线上点餐 · 小票</div>
+    <div class="r-meta">今日第 ${o.dailySeq != null ? o.dailySeq : "?"} 单　${new Date(o.createdAt).toLocaleString("zh-CN")}</div>
     <div class="r-meta">订单号 ${o.id}</div>
     <hr/>
     ${lines}

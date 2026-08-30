@@ -1,19 +1,34 @@
 // ============================================================
-// 数据层：Supabase（Postgres + Realtime）。替换原本地 REST/WebSocket 实现。
-// 对外暴露 OrderStore / MenuStore / createPay / paySuccess，接口与旧版保持一致，
-// 因此 index.html / kitchen.html / admin.html 无需改动调用方式。
+// 数据层：Supabase（Postgres + Realtime）。
+// 配置由「设置页(settings.html)」填写并存于浏览器 localStorage（见 config.js），
+// 因此无需把密钥写进代码，也无需告诉任何人。
+// 对外暴露 OrderStore / MenuStore / createPay / paySuccess / connect / ensureClient。
 // ============================================================
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
-
-const configured = !!(SUPABASE_URL && SUPABASE_ANON_KEY && SUPABASE_URL.startsWith("http"));
+import { getConfig, saveConfig } from "./config.js";
 
 let supabase = null;
-if (configured) {
-  try { supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY); }
-  catch (e) { console.error("Supabase 初始化失败", e); supabase = null; }
+
+// 懒初始化：首次需要时从 localStorage 读取用户自行填写的配置
+export function ensureClient() {
+  if (supabase) return supabase;
+  const c = getConfig();
+  if (c && c.url && c.anonKey && c.url.startsWith("http")) {
+    try { supabase = createClient(c.url, c.anonKey); }
+    catch (e) { console.error("Supabase 初始化失败", e); supabase = null; }
+  }
+  return supabase;
 }
-if (!configured) showConfigHint();
+
+// 设置页调用：保存并（重）连接
+export function connect(url, anonKey) {
+  saveConfig({ url, anonKey });
+  if (supabase) { try { supabase.removeAllChannels(); } catch (e) {} }
+  supabase = createClient(url, anonKey);
+  return supabase;
+}
+
+export function isConfigured() { return !!ensureClient(); }
 
 let orderCache = [];
 let menuCache = [];
@@ -27,25 +42,31 @@ function notifyMenu() { menuListeners.forEach((cb) => cb(menuCache)); }
 
 function showConfigHint() {
   if (document.getElementById("cfgHint")) return;
+  if (!document.body) return;
   const b = document.createElement("div");
   b.id = "cfgHint";
   b.style.cssText =
     "position:fixed;top:0;left:0;right:0;z-index:9999;background:#ff6b35;color:#fff;" +
     "padding:10px 14px;font-size:13px;text-align:center;line-height:1.4;";
-  b.textContent =
-    "⚠️ 未配置 Supabase：请在 js/config.js 填入 SUPABASE_URL 与 SUPABASE_ANON_KEY，否则无法云端同步（菜单将使用本地兜底数据）。";
+  b.innerHTML =
+    '⚠️ 未配置 Supabase：<a href="settings.html" style="color:#fff;text-decoration:underline;">点此前往设置</a>' +
+    '（密钥仅存本机浏览器，安全）';
   document.body.appendChild(b);
 }
 
-// Supabase 返回 created_at(snake_case)，前端统一用 createdAt
+// Supabase 返回 snake_case 字段，前端统一用 camelCase
 function mapOrder(o) {
   if (!o) return o;
-  return Object.assign({}, o, { createdAt: o.created_at || o.createdAt });
+  return Object.assign({}, o, {
+    createdAt: o.created_at || o.createdAt,
+    dailySeq: o.daily_seq != null ? o.daily_seq : o.dailySeq
+  });
 }
 
 // ---------------------- 订单 ----------------------
 async function loadOrders() {
-  if (!supabase) return orderCache;
+  ensureClient();
+  if (!supabase) { showConfigHint(); return orderCache; }
   const { data, error } = await supabase
     .from("orders")
     .select("*")
@@ -71,9 +92,10 @@ export const OrderStore = {
   list() { return orderCache; },
   get(id) { return orderCache.find((o) => o.id === id) || null; },
   async add(order) {
+    ensureClient();
     if (!supabase) throw new Error("Supabase 未配置");
+    // 线上点餐：不传桌号，daily_seq 由数据库触发器按天自增分配
     const row = {
-      table: order.table || "0",
       items: order.items || [],
       total: order.total || 0,
       count: order.count || 0,
@@ -85,9 +107,10 @@ export const OrderStore = {
     const { data, error } = await supabase.from("orders").insert(row).select().single();
     if (error) throw error;
     await loadOrders();
-    return mapOrder(data);
+    return mapOrder(data); // 含 daily_seq
   },
   async update(id, patch) {
+    ensureClient();
     if (!supabase) throw new Error("Supabase 未配置");
     const set = {};
     if (patch.status) set.status = patch.status;
@@ -107,6 +130,7 @@ export const OrderStore = {
     return this.get(id);
   },
   async clearDone() {
+    ensureClient();
     if (!supabase) return;
     const done = orderCache.filter((o) => o.status === "done");
     for (const o of done) {
@@ -116,6 +140,7 @@ export const OrderStore = {
   },
   subscribe(cb) {
     orderListeners.add(cb);
+    ensureClient();
     ensureOrdersSub();
     if (!orderCache.length) loadOrders();
     return () => orderListeners.delete(cb);
@@ -123,6 +148,7 @@ export const OrderStore = {
 };
 
 function ensureOrdersSub() {
+  ensureClient();
   if (!supabase || ordersSub) return;
   ordersSub = supabase
     .channel("orders-room")
@@ -132,7 +158,8 @@ function ensureOrdersSub() {
 
 // ---------------------- 菜单 ----------------------
 async function loadMenu() {
-  if (!supabase) return menuCache;
+  ensureClient();
+  if (!supabase) { showConfigHint(); return menuCache; }
   const { data, error } = await supabase.from("menu").select("data, updated_at").eq("id", 1).single();
   if (error && error.code !== "PGRST116") { console.error("加载菜单失败", error); return menuCache; }
   menuCache = data && Array.isArray(data.data) ? data.data : [];
@@ -144,6 +171,7 @@ export const MenuStore = {
   list() { return menuCache; },
   async load() { return loadMenu(); },
   async save(menu) {
+    ensureClient();
     if (!supabase) throw new Error("Supabase 未配置");
     const { error } = await supabase
       .from("menu")
@@ -155,6 +183,7 @@ export const MenuStore = {
   },
   subscribe(cb) {
     menuListeners.add(cb);
+    ensureClient();
     ensureMenuSub();
     if (!menuCache.length) loadMenu();
     return () => menuListeners.delete(cb);
@@ -162,6 +191,7 @@ export const MenuStore = {
 };
 
 function ensureMenuSub() {
+  ensureClient();
   if (!supabase || menuSub) return;
   menuSub = supabase
     .channel("menu-room")
@@ -171,6 +201,7 @@ function ensureMenuSub() {
 
 // ---------------------- 菜品图片上传（Supabase Storage）----------------------
 export async function uploadImage(file) {
+  ensureClient();
   if (!supabase) throw new Error("Supabase 未配置");
   const ext = (file.name.split(".").pop() || "png").toLowerCase().replace(/[^a-z0-9]/g, "");
   const path = "dishes/" + Date.now() + "_" + Math.random().toString(36).slice(2, 8) + "." + ext;
@@ -189,13 +220,13 @@ export async function uploadImage(file) {
 export async function createPay(orderId) {
   const o = OrderStore.get(orderId);
   if (!o) throw new Error("订单不存在");
+  ensureClient();
   if (!supabase) return { demo: true };
   try {
     const { data, error } = await supabase.functions.invoke("wechat-pay", {
       body: {
         action: "create",
         orderId: o.id,
-        table: o.table,
         totalFen: Math.round((o.total || 0) * 100)
       }
     });

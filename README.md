@@ -5,12 +5,15 @@
 > 因为是纯静态站点，构建产物可直接托管到 **GitHub Pages / Vercel / Netlify / 任意静态空间**，无需自己的服务器。
 
 ## 功能
-- 📱 顾客端：扫码识别桌号（`?table=12`）→ 点菜加购 → 提交订单 → 实时跟踪状态（待制作→制作中→已出餐→已完成）
-- 👨‍🍳 后厨端：实时接单台，一键推进状态，支持催单高亮、订单备注、加菜、打印小票
-- 🛠 后台端：分类 / 菜品（名称·价格·描述·emoji·图片URL）增删改，保存即同步前台
-- 💳 支付：微信 / 支付宝选择 + 「模拟支付成功」（沙箱）；接真实商户号见下文
-- 🔔 Realtime：基于 Supabase Realtime 的 WebSocket 推送，跨设备 / 跨页面实时同步
+- 📱 顾客端：扫码进入点餐页 → 点菜加购 → 提交订单 → **自动获得「今日第 N 单」序号** → 实时跟踪状态（待制作→制作中→已出餐→已完成）
+- 👨‍🍳 后厨端：实时接单台，一键推进状态，支持催单高亮、订单备注、加菜、打印小票（同样按「今日第 N 单」查看）
+- 🛠 后台端：分类 / 菜品（名称·价格·描述·emoji·图片URL·**自主上传图片**）增删改，保存即同步前台
+- 💳 支付：微信 Native 扫码付（真实接入见下文）；未配置时自动降级为「模拟支付成功」
+- ⚙️ 连接设置：Supabase 地址 / anon key 在**应用内设置页**填写，仅存浏览器本地，密钥不经手任何人
+- 🔔 Realtime：基于 Supabase Realtime 的推送，跨设备 / 跨页面实时同步
 - 📲 PWA：可「添加到主屏幕」、离线点餐（应用壳缓存）
+
+> 本版本为**线上点餐**（无桌号），订单按自然日自动编号「今日第 N 单」，由数据库触发器分配，避免并发计数出错。
 
 ## 目录结构
 ```
@@ -18,20 +21,23 @@ scan-order-pwa/
 ├── index.html        # 顾客端
 ├── kitchen.html      # 后厨/商家端
 ├── admin.html        # 菜单后台管理
+├── settings.html     # ★ Supabase 连接设置（自行填写，存浏览器本地）
 ├── manifest.json     # PWA 清单
 ├── sw.js             # Service Worker（应用壳缓存）
 ├── css/style.css
 ├── js/
-│   ├── config.js     # ★ 填入你的 Supabase 配置
+│   ├── config.js     # 配置读取（localStorage），无需手改
 │   ├── api.js        # 数据层（Supabase 客户端 + Realtime）
 │   ├── menu.js       # 状态机 + 默认菜单（离线兜底）
 │   ├── app.js        # 顾客端逻辑
 │   ├── kitchen.js    # 后厨端逻辑
-│   └── admin.js      # 后台逻辑
+│   ├── admin.js      # 后台逻辑
+│   └── settings.js   # 设置页逻辑
 ├── icons/            # PWA 图标
-├── qrcodes/          # 示例桌码二维码
+├── qrcodes/          # 点餐二维码（无桌号）
 ├── supabase/
-│   └── schema.sql    # 建表 + RLS + Realtime 开启（一次性执行）
+│   ├── schema.sql    # 建表 + 每日序号触发器 + RLS + Realtime（一次性执行）
+│   └── functions/wechat-pay/index.ts  # 微信支付 Edge Function
 └── server/           # 可选：本地 Node 后端（不接 Supabase 时用于本地开发）
 ```
 
@@ -42,12 +48,11 @@ scan-order-pwa/
 2. 进入 **SQL Editor** → 新建查询 → 粘贴 `supabase/schema.sql` 全部内容 → **Run**
    - 会创建 `menu` / `orders` 两张表、注入默认菜单、开启 Realtime、配置匿名读写 RLS
 
-### 2. 填入配置
-打开 `js/config.js`，替换为你的项目信息（Supabase 控制台 → Project Settings → API）：
-```js
-export const SUPABASE_URL = "https://xxxx.supabase.co";
-export const SUPABASE_ANON_KEY = "你的 anon public key";
-```
+### 2. 填写 Supabase 配置（在应用内，无需改代码）
+打开站点任意页面，若未配置会顶部出现橙色提示条，点击进入 **`/settings.html`**（或右上角 ⚙️）：
+- 填入 **Project URL** 与 **anon public key**（Supabase 控制台 → Project Settings → API）
+- 点「保存并连接」，信息**只保存在本机浏览器**，连接成功自动跳回点餐页
+> 换设备 / 清缓存后需重新填写。无需把密钥写进代码，也无需告诉任何人。
 
 ### 3. 部署 / 预览
 **方式 A：本地预览**
@@ -76,28 +81,23 @@ npx serve .            # 或 python -m http.server 4173
    - Source 选 **Deploy from a branch**
    - Branch 选 **main** / 目录 **/ (root)** → Save
 4. 约 1 分钟后访问 `https://<你的用户名>.github.io/<仓库名>/`
-   - 顾客端：`/`（手机扫码即 `?table=12`）
-   - 后厨端：`/kitchen.html`　后台：`/admin.html`
-5. 手机扫码：把 `qrcodes/table-12.png` 里的 `localhost` 换成你的 GitHub Pages 地址
-   （或本机局域网 IP）重新生成桌码即可，详见 `gen_table_qr.py`。
+   - 顾客端：`/`　后厨端：`/kitchen.html`　后台：`/admin.html`　设置：`/settings.html`
+5. 手机扫码：用 `qrcodes/order.png`（已生成，指向站点根地址）即可，详见「点餐二维码」。
 
-## 接入真实支付（微信 / 支付宝）
-当前为沙箱演示（`createPay` 仅返回占位 `payUrl`，`paySuccess` 直接置 `paid=true`）。
-生产接入步骤：
-1. 在服务端用 Supabase **service_role** key 调用微信支付 JSAPI / 支付宝当面付统一下单，生成支付链接或二维码；
-2. 顾客端 `createPay` 拿到真实 `payUrl` 展示二维码；
-3. 支付回调成功后，把对应订单 `paid` 置 `true`（Supabase 是云端，后厨端会实时刷新）。
+## 支付说明
+顾客端「去支付」会生成**微信扫码付二维码**（真实接入见下文「接入真实微信支付」）。
+未部署 Edge Function 或未配置商户密钥时，前端自动降级为「模拟支付成功」，不影响点餐 / 后厨流程演示。
 
-> ⚠️ 不要把 service_role key 放到前端。前端只用 anon key（已配置 RLS）。
+> ⚠️ 不要把 service_role key 或微信商户私钥放到前端。前端只用 anon key（已配置 RLS），商户密钥仅存于 Supabase Secrets。
 
 ## 可选的本地后端（不接 Supabase 时）
 `server/server.js` 是一个零依赖 Node 服务（REST + 手写 WebSocket + JSON 文件持久化），
-适合没有 Supabase 时的本地开发。使用：
+适合没有 Supabase 时的本地开发演示。使用：
 ```bash
 PORT=4173 node server/server.js
 ```
-要让前端走本地后端而非 Supabase，把 `js/config.js` 的 URL 留空（置为 `""`）即可自动回退到本地兜底菜单；
-但订单/同步仍需后端，因此**推荐直接使用 Supabase 方案**。
+> 本地后端与 Supabase 是两套独立方案：用了 Supabase 就无需启动它；要本地演示可单独运行，
+> 但订单/同步数据存于本地文件，不跨设备。生产环境**推荐直接使用 Supabase 方案**。
 
 ## 菜品图片自主上传
 后台 `admin.html` 每个菜品支持**选择本地图片文件**直接上传：
@@ -129,12 +129,14 @@ PORT=4173 node server/server.js
 
 > 未部署函数或密钥未配置时，前端自动降级为「模拟支付成功」，不影响其他流程演示。
 
-## 桌码二维码
-桌码二维码（`qrcodes/table-12.png`）在仓库上传到 GitHub Pages 之后，用实际站点地址重新生成：
+## 点餐二维码
+线上点餐无需桌号，扫码即进入点餐页。二维码已生成在 `qrcodes/order.png`（指向站点根地址）。
+如需重新生成（例如换了站点域名），编辑 `gen_table_qr.py` 顶部的 `BASE_URL` 后运行：
 ```bash
-# 把 <你的站点地址> 换成 https://<用户名>.github.io/<仓库名>/
-python gen_table_qr.py --base <你的站点地址>
+python gen_table_qr.py
 ```
+- `BASE_URL` 默认 `https://fuckyoumxb.github.io/scan-and-order`（即本仓库的 GitHub Pages 地址）
+- 生成的 `qrcodes/order.png` 扫码即进 `/`，下单后自动获得「今日第 N 单」序号
 
 ## 说明
 - 演示用 RLS 允许匿名读写，便于快速体验；生产环境请为 `orders` 增加 auth / 门店隔离策略。
