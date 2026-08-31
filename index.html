@@ -74,16 +74,16 @@
     </div>
   </div>
 
-  <!-- 支付弹窗（微信 Native 扫码付） -->
+  <!-- 支付弹窗（自有收款码：顾客扫码付款后点"我已支付"） -->
   <div class="drawer-mask" id="payMask"></div>
   <div class="drawer pay-drawer" id="payDrawer">
-    <div class="head"><span>微信支付</span><button class="clear" id="payClose">关闭</button></div>
+    <div class="head"><span>支付</span><button class="clear" id="payClose">关闭</button></div>
     <div class="pay-body">
       <div class="pay-info">
-        <div class="pay-qr-wrap"><img id="payQr" class="pay-qr" alt="微信支付二维码" /></div>
-        <div class="pay-tip" id="payTip">正在生成二维码…</div>
-        <div id="payDemo" class="pay-sandbox hidden">演示环境（未部署微信支付）· 点击下方模拟支付成功</div>
-        <button class="submit" id="payMock" style="width:100%;border-radius:10px;margin-top:10px;" hidden>模拟支付成功</button>
+        <div class="pay-qr-wrap"><img id="payQr" class="pay-qr" alt="收款码" /></div>
+        <div class="pay-tip" id="payTip">正在加载收款码…</div>
+        <div id="payDemo" class="pay-sandbox hidden">演示环境</div>
+        <button class="submit" id="payMock" style="width:100%;border-radius:10px;margin-top:10px;" hidden>我已支付 ✓</button>
       </div>
     </div>
   </div>

@@ -198,9 +198,14 @@ function renderTrack(order) {
   document.getElementById("paidBadge").classList.toggle("hidden", !paid);
   // 订单明细（确认已点）
   const itemsEl = document.getElementById("trackItems");
-  itemsEl.innerHTML = (order.items || []).map((it) =>
-    `<div class="ti"><span class="n">${it.name} ×${it.qty}</span><span class="p">¥${it.price * it.qty}</span></div>`
-  ).join("");
+  const items = order.items || [];
+  if (items.length === 0) {
+    itemsEl.innerHTML = '<div class="ti" style="justify-content:center;color:var(--muted);">（暂无菜品明细）</div>';
+  } else {
+    itemsEl.innerHTML = items.map((it) =>
+      `<div class="ti"><span class="n">${it.name} ×${it.qty}</span><span class="p">¥${it.price * it.qty}</span></div>`
+    ).join("");
+  }
   const steps = document.getElementById("trackSteps");
   steps.innerHTML = "";
   const cur = STATUS_FLOW.indexOf(order.status);
@@ -235,36 +240,32 @@ document.getElementById("payBtn").onclick = async () => {
   document.getElementById("payMask").classList.add("open");
   document.getElementById("payDrawer").classList.add("open");
   const mockBtn = document.getElementById("payMock");
+  // 确保站点配置已加载（含店主的收款码）
+  if (!SITE) { try { SITE = await SiteStore.load(); } catch (e) { SITE = null; } }
   if (SITE && SITE.payQr) {
     // 自有收款码模式：展示店主收款码，顾客付款后点「我已支付」
     document.getElementById("payDemo").classList.add("hidden");
     const qr = document.getElementById("payQr");
     qr.src = SITE.payQr;
     qr.alt = SITE.payTitle || "收款码";
+    qr.onerror = () => {
+      qr.removeAttribute("src");
+      qr.alt = "收款码加载失败";
+      document.getElementById("payTip").textContent = "收款码图片加载失败，请稍后重试";
+    };
     document.getElementById("payTip").textContent =
       (SITE.payTitle ? SITE.payTitle + " · " : "") + "请长按或扫一扫上方收款码完成支付";
     mockBtn.textContent = "我已支付 ✓";
     mockBtn.classList.remove("hidden");
     mockBtn.dataset.mode = "qr";
   } else {
-    // 微信 Native 扫码付（需部署 wechat-pay Edge Function）；否则降级演示
-    const r = await createPay(currentOrderId);
-    if (r.code_url) {
-      document.getElementById("payDemo").classList.add("hidden");
-      mockBtn.classList.add("hidden");
-      try {
-        document.getElementById("payQr").src = await QRCode.toDataURL(r.code_url, { width: 220, margin: 1 });
-      } catch (e) { document.getElementById("payQr").alt = "二维码生成失败"; }
-      document.getElementById("payTip").textContent = "请用微信「扫一扫」完成支付";
-    } else {
-      document.getElementById("payDemo").classList.remove("hidden");
-      mockBtn.textContent = "模拟支付成功";
-      mockBtn.classList.remove("hidden");
-      mockBtn.dataset.mode = "demo";
-      document.getElementById("payQr").removeAttribute("src");
-      document.getElementById("payQr").alt = "演示模式";
-      document.getElementById("payTip").textContent = "演示模式：未接入微信支付";
-    }
+    // 未配置收款码：给出清晰提示，而不是去试一个用户没部署的微信支付
+    document.getElementById("payDemo").classList.add("hidden");
+    mockBtn.classList.add("hidden");
+    const qr = document.getElementById("payQr");
+    qr.removeAttribute("src");
+    qr.alt = "未配置收款码";
+    document.getElementById("payTip").textContent = "店家尚未上传收款码，请联系店家配置后再支付";
   }
 };
 document.getElementById("payClose").onclick = closePay;
