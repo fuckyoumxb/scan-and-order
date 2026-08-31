@@ -228,6 +228,32 @@ body {
 .track .ok { font-size: 48px; }
 .track .no { font-size: 20px; font-weight: 700; margin: 10px 0; }
 .track .amount { color: var(--brand); font-size: 18px; font-weight: 700; }
+
+/* 醒目大单号：仅在支付成功后显示 */
+.seq-hero {
+  margin: 4px auto 14px;
+  background: linear-gradient(135deg, #ffb300, var(--brand));
+  color: #fff;
+  border-radius: 18px;
+  padding: 16px 12px 14px;
+  max-width: 260px;
+  box-shadow: 0 8px 20px rgba(255, 107, 53, 0.35);
+  animation: seqPop 0.35s ease;
+}
+.seq-hero .seq-label { font-size: 14px; opacity: 0.95; letter-spacing: 2px; }
+.seq-hero .seq-num {
+  font-size: 58px;
+  font-weight: 900;
+  line-height: 1.1;
+  margin-top: 2px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 3px;
+}
+@keyframes seqPop {
+  0% { transform: scale(0.6); opacity: 0; }
+  70% { transform: scale(1.06); }
+  100% { transform: scale(1); opacity: 1; }
+}
 .steps {
   display: flex;
   justify-content: space-between;

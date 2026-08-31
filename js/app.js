@@ -8,6 +8,11 @@ const cart = {};
 let currentOrderId = null;
 let addingToOrderId = null;
 
+// 序号格式化为 4 位补零，如 1 -> "0001"
+function fmtSeq(seq) {
+  return String(seq != null ? seq : 0).padStart(4, "0");
+}
+
 // ---------- 菜单加载（服务端优先，离线兜底）----------
 async function initMenu() {
   const serverMenu = await MenuStore.load();
@@ -163,18 +168,33 @@ function resetCart() {
 function showTrack(id) {
   currentOrderId = id;
   const o = OrderStore.get(id);
-  const seq = o && o.dailySeq != null ? o.dailySeq : "—";
-  document.getElementById("seqBadge").textContent = "今日第 " + seq + " 单";
-  document.getElementById("trackSeq").textContent = "今日第 " + seq + " 单";
+  const paid = o && o.paid;
+  document.getElementById("seqBadge").textContent = paid ? "No." + fmtSeq(o.dailySeq) : "待支付";
+  document.getElementById("trackSeq").textContent = paid ? "No." + fmtSeq(o.dailySeq) : "待支付";
   document.getElementById("orderView").classList.add("hidden");
   document.getElementById("trackView").classList.remove("hidden");
   renderTrack(o);
 }
 function renderTrack(order) {
   if (!order) return;
-  document.getElementById("trackNo").textContent = "今日第 " + (order.dailySeq != null ? order.dailySeq : "—") + " 单";
+  const paid = !!order.paid;
+  const seq = order.dailySeq != null ? order.dailySeq : 0;
+  // 顶部序号徽标：仅支付完成后显示单号，否则显示「待支付」
+  document.getElementById("seqBadge").textContent = paid ? "No." + fmtSeq(seq) : "待支付";
+  document.getElementById("trackSeq").textContent = paid ? "No." + fmtSeq(seq) : "待支付";
+  // 醒目大单号（seqHero）：仅支付完成后显示
+  const hero = document.getElementById("seqHero");
+  if (paid) {
+    document.getElementById("seqNum").textContent = fmtSeq(seq);
+    hero.classList.remove("hidden");
+  } else {
+    hero.classList.add("hidden");
+  }
+  document.getElementById("trackNo").textContent = paid
+    ? "支付成功 · 请凭单号取餐"
+    : "订单已提交，请完成支付";
   document.getElementById("trackAmount").textContent = `共 ${order.count} 件 · 合计 ¥${order.total}`;
-  document.getElementById("paidBadge").classList.toggle("hidden", !order.paid);
+  document.getElementById("paidBadge").classList.toggle("hidden", !paid);
   const steps = document.getElementById("trackSteps");
   steps.innerHTML = "";
   const cur = STATUS_FLOW.indexOf(order.status);
@@ -247,7 +267,7 @@ document.getElementById("printBtn").onclick = () => {
   el.classList.remove("hidden");
   el.innerHTML = `
     <div class="r-shop">线上点餐 · 小票</div>
-    <div class="r-meta">今日第 ${o.dailySeq != null ? o.dailySeq : "?"} 单　${new Date(o.createdAt).toLocaleString("zh-CN")}</div>
+    <div class="r-meta">取单号 No.${fmtSeq(o.dailySeq)}　${new Date(o.createdAt).toLocaleString("zh-CN")}</div>
     <div class="r-meta">订单号 ${o.id}</div>
     <hr/>
     ${lines}
