@@ -41,7 +41,8 @@
     <input id="payTitle" placeholder="微信收款" autocomplete="off" spellcheck="false" />
     <div class="hint">
       上传你自己的微信/支付宝<b>收款码</b>图片。顾客点「去支付」会看到此码，付款后点「我已支付」即出取单号。<br />
-      图片存于 Supabase 公开存储桶，<b>所有顾客手机都能看到</b>，无需逐台设置。
+      图片直接存进站点配置（数据库），<b>无需新建存储桶</b>，所有顾客手机都能看到，无需逐台设置。<br />
+      <b>提示：</b>如果医院/食堂已有现成的收款码图片，直接选图上传即可；服务器在哪个地区都不影响。
     </div>
     <button class="submit" id="saveQrBtn">上传并保存收款码</button>
     <div id="qrMsg"></div>

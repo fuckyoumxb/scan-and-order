@@ -213,18 +213,30 @@ export async function uploadImage(file) {
   return data.publicUrl;
 }
 
-// 收款码图片：固定路径，便于覆盖更新（所有顾客可见）
+// 收款码图片：直接以 base64 DataURL 存进 site 表的 pay_qr 字段。
+// 这样做【不需要】新建 Supabase Storage 存储桶，也不需要额外的存储权限策略，
+// 因此无论 Supabase 服务器在哪个地区都能稳定工作。
 export async function uploadPayQr(file) {
   ensureClient();
   if (!supabase) throw new Error("Supabase 未配置");
-  const ext = (file.name.split(".").pop() || "png").toLowerCase().replace(/[^a-z0-9]/g, "");
-  const path = "pay-qr." + ext;
-  const { error } = await supabase.storage
-    .from("dish-images")
-    .upload(path, file, { upsert: true, contentType: file.type || "image/png" });
-  if (error) throw error;
-  const { data } = supabase.storage.from("dish-images").getPublicUrl(path);
-  return data.publicUrl;
+  if (!file || !file.type || !file.type.startsWith("image/")) {
+    throw new Error("请选择图片文件（二维码图片）");
+  }
+  const dataUrl = await fileToDataUrl(file);
+  // base64 后体积约 1.37× 原始大小；二维码通常很小，这里设上限避免把表撑爆
+  if (dataUrl.length > 1500000) {
+    throw new Error("图片过大（建议压到 1MB 以内），请压缩后再上传");
+  }
+  return dataUrl;
+}
+
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error("读取图片失败，请重试"));
+    reader.readAsDataURL(file);
+  });
 }
 
 // ---------------------- 站点配置（收款码等，所有顾客共享）----------------------
