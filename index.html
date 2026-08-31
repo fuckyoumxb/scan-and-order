@@ -8,6 +8,10 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
   <link rel="stylesheet" href="css/style.css" />
+  <script>
+    // 店家自用入口：仅在 URL 带 ?boss 时显示后台齿轮，顾客正常点餐页看不到
+    if (location.search.indexOf('boss') !== -1) document.documentElement.classList.add('boss-mode');
+  </script>
 </head>
 <body>
   <!-- 点餐视图 -->

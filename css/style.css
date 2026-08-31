@@ -433,7 +433,10 @@ a.submit { display: block; width: 100%; text-decoration: none; box-sizing: borde
   .r-foot { text-align: center; font-size: 12px; margin-top: 10px; }
 }
 
-/* 连接设置页入口（齿轮） */
+/* 连接设置页入口（齿轮）：顾客点餐页默认隐藏，仅 ?boss 参数（店家自用）时显示 */
+.gear { display: none; }
+html.boss-mode .gear { display: inline; }
+
 .gear {
   margin-left: auto;
   font-size: 20px;
