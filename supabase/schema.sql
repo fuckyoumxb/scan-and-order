@@ -13,7 +13,6 @@ create table if not exists menu (
 -- 2) 订单表
 create table if not exists orders (
   id          uuid          primary key default gen_random_uuid(),
-  table       text          not null default '0',
   items       jsonb         not null default '[]'::jsonb,
   total       numeric       not null default 0,
   count       int           not null default 0,
@@ -77,19 +76,24 @@ end $$;
 alter table menu  enable row level security;
 alter table orders enable row level security;
 
+drop policy if exists "menu public write"  on menu;   -- 旧名兜底清理
 drop policy if exists "menu public read"   on menu;
-drop policy if exists "menu public write"  on menu;
-drop policy if exists "orders public read"  on orders;
-drop policy if exists "orders public write" on orders;
+drop policy if exists "menu public insert" on menu;
+drop policy if exists "menu public update" on menu;
+drop policy if exists "orders public write" on orders; -- 旧名兜底清理
+drop policy if exists "orders public read"   on orders;
+drop policy if exists "orders public insert" on orders;
+drop policy if exists "orders public update" on orders;
+drop policy if exists "orders public delete" on orders;
 
-create policy "menu public read"   on menu  for select using (true);
-create policy "menu public write"  on menu  for insert with check (true);
-create policy "menu public write"  on menu  for update using (true);
+create policy "menu public read"    on menu  for select using (true);
+create policy "menu public insert"  on menu  for insert with check (true);
+create policy "menu public update"  on menu  for update using (true);
 
-create policy "orders public read"  on orders for select using (true);
-create policy "orders public write" on orders for insert with check (true);
-create policy "orders public write" on orders for update using (true);
-create policy "orders public write" on orders for delete using (true);
+create policy "orders public read"   on orders for select using (true);
+create policy "orders public insert" on orders for insert with check (true);
+create policy "orders public update" on orders for update using (true);
+create policy "orders public delete" on orders for delete using (true);
 
 -- 6) 菜品图片存储桶（公开读、匿名上传）。后台可自主上传菜品图片。
 insert into storage.buckets (id, name, public)

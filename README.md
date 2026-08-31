@@ -9,7 +9,7 @@
 - 👨‍🍳 后厨端：实时接单台，一键推进状态，支持催单高亮、订单备注、加菜、打印小票（同样按「今日第 N 单」查看）
 - 🛠 后台端：分类 / 菜品（名称·价格·描述·emoji·图片URL·**自主上传图片**）增删改，保存即同步前台
 - 💳 支付：微信 Native 扫码付（真实接入见下文）；未配置时自动降级为「模拟支付成功」
-- ⚙️ 连接设置：Supabase 地址 / anon key 在**应用内设置页**填写，仅存浏览器本地，密钥不经手任何人
+- ⚙️ 连接设置：Supabase 地址 / anon key 默认**写进代码 `js/config.js` 的 `FALLBACK_CONFIG`**（anon key 是公开密钥，受 RLS 保护，可提交），顾客扫码即用；也可在**应用内设置页 `settings.html`** 临时覆盖（仅本机）。
 - 🔔 Realtime：基于 Supabase Realtime 的推送，跨设备 / 跨页面实时同步
 - 📲 PWA：可「添加到主屏幕」、离线点餐（应用壳缓存）
 
@@ -26,7 +26,7 @@ scan-order-pwa/
 ├── sw.js             # Service Worker（应用壳缓存）
 ├── css/style.css
 ├── js/
-│   ├── config.js     # 配置读取（localStorage），无需手改
+│   ├── config.js     # 配置读取（FALLBACK_CONFIG 写死生产配置 + localStorage 覆盖）
 │   ├── api.js        # 数据层（Supabase 客户端 + Realtime）
 │   ├── menu.js       # 状态机 + 默认菜单（离线兜底）
 │   ├── app.js        # 顾客端逻辑
@@ -48,11 +48,25 @@ scan-order-pwa/
 2. 进入 **SQL Editor** → 新建查询 → 粘贴 `supabase/schema.sql` 全部内容 → **Run**
    - 会创建 `menu` / `orders` 两张表、注入默认菜单、开启 Realtime、配置匿名读写 RLS
 
-### 2. 填写 Supabase 配置（在应用内，无需改代码）
-打开站点任意页面，若未配置会顶部出现橙色提示条，点击进入 **`/settings.html`**（或右上角 ⚙️）：
-- 填入 **Project URL** 与 **anon public key**（Supabase 控制台 → Project Settings → API）
-- 点「保存并连接」，信息**只保存在本机浏览器**，连接成功自动跳回点餐页
-> 换设备 / 清缓存后需重新填写。无需把密钥写进代码，也无需告诉任何人。
+### 2. 填写 Supabase 配置（两种做法，二选一）
+
+**做法 A（推荐，顾客扫码即用）：写进 `js/config.js`**
+打开 `js/config.js`，把顶部的 `FALLBACK_CONFIG` 填成你自己的值：
+```js
+const FALLBACK_CONFIG = {
+  url: "https://xxxxxx.supabase.co",        // Supabase 控制台 Project Settings → API → Project URL
+  anonKey: "eyJxxxxxxx..."                  // 同页的 anon public key
+};
+```
+anon key 是**公开密钥**（受 RLS 行级安全保护，不是秘密），可以放心提交到仓库。
+填好后部署，所有扫码打开的手机都会自动用这份配置，**不再需要每台设备单独设置**。
+
+**做法 B（可选，临时覆盖）：应用内设置页**
+若未配置会在页面顶部出现橙色提示条，点击进入 **`/settings.html`**（或右上角 ⚙️）：
+- 填入 **Project URL** 与 **anon public key** →「保存并连接」，信息只存**本机浏览器**
+- 仅用于临时切到别的库 / 测试；优先级高于 `FALLBACK_CONFIG`，但换设备 / 清缓存后失效
+
+> ⚠️ 为什么不能只靠设置页？设置页存的是浏览器 `localStorage`，**按设备隔离**。顾客用自己手机扫码时不会有这份配置，于是会看到「未配置」横幅且无法下单。所以上线给顾客用时，务必用做法 A 把 key 写进代码。
 
 ### 3. 部署 / 预览
 **方式 A：本地预览**
