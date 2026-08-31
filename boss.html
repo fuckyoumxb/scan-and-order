@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#ff6b35" />
+  <title>商家后台 · 扫码点餐</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    body { background: #f5f6f7; }
+    .boss { max-width: 460px; margin: 0 auto; padding: 24px 16px 44px; }
+    .boss h1 { font-size: 22px; text-align: center; margin: 18px 0 6px; }
+    .boss .sub { text-align: center; color: var(--muted); font-size: 13px; margin-bottom: 22px; }
+    .boss .row {
+      display: flex; align-items: center; gap: 14px;
+      background: #fff; border: 1px solid #eee; border-radius: 16px;
+      padding: 16px; margin-bottom: 14px;
+      text-decoration: none; color: inherit;
+    }
+    .boss .row:active { background: #fff7f2; }
+    .boss .row .ico { font-size: 30px; }
+    .boss .row .txt b { font-size: 16px; }
+    .boss .row .txt div { color: var(--muted); font-size: 12px; margin-top: 3px; }
+    .boss a.submit { margin-top: 18px; }
+    .boss .tip { font-size: 12px; color: var(--muted); text-align: center; margin-top: 22px; line-height: 1.7; }
+  </style>
+</head>
+<body>
+  <div class="boss">
+    <h1>🛠️ 商家后台</h1>
+    <div class="sub">店家管理入口 · 顾客请扫主页点餐二维码</div>
+
+    <a class="row" href="kitchen.html">
+      <div class="ico">👨‍🍳</div>
+      <div class="txt"><b>后厨接单端</b><div>实时查看订单 · 推进状态 · 叫号</div></div>
+    </a>
+    <a class="row" href="admin.html">
+      <div class="ico">🍱</div>
+      <div class="txt"><b>菜品管理端</b><div>增删改菜品 · 上传菜品图片</div></div>
+    </a>
+    <a class="row" href="settings.html">
+      <div class="ico">⚙️</div>
+      <div class="txt"><b>连接 / 收款码设置</b><div>配置 Supabase · 上传你的微信收款码</div></div>
+    </a>
+
+    <a class="submit" href="index.html">← 返回顾客点餐页</a>
+
+    <div class="tip">建议把本页与「后厨接单端」「菜品管理端」在手机/平板「添加到主屏幕」当 App 使用。</div>
+  </div>
+</body>
+</html>

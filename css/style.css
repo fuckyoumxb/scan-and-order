@@ -175,6 +175,7 @@ body {
   line-height: 1.2;
 }
 .submit:disabled { background: #555b63; cursor: not-allowed; }
+a.submit { display: block; width: 100%; text-decoration: none; box-sizing: border-box; text-align: center; }
 
 /* 购物车底栏的提交按钮：圆角胶囊、占满右侧 */
 .cartbar .submit {
