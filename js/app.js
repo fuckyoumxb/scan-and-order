@@ -265,7 +265,17 @@ document.getElementById("payBtn").onclick = async () => {
     const qr = document.getElementById("payQr");
     qr.removeAttribute("src");
     qr.alt = "未配置收款码";
-    document.getElementById("payTip").textContent = "店家尚未上传收款码，请联系店家配置后再支付";
+    const setup = document.getElementById("paySetupLink");
+    // 仅在店家身份(?boss)下显示「立即上传」按钮，方便店家自测时一键跳转
+    if (document.documentElement.classList.contains("boss-mode")) {
+      setup.classList.remove("hidden");
+      setup.style.display = "block";
+      document.getElementById("payTip").textContent = "店家尚未上传收款码（点下方按钮上传）";
+    } else {
+      setup.classList.add("hidden");
+      setup.style.display = "none";
+      document.getElementById("payTip").textContent = "店家尚未上传收款码，请联系店家配置后再支付";
+    }
   }
 };
 document.getElementById("payClose").onclick = closePay;
