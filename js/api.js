@@ -213,6 +213,44 @@ export async function uploadImage(file) {
   return data.publicUrl;
 }
 
+// 收款码图片：固定路径，便于覆盖更新（所有顾客可见）
+export async function uploadPayQr(file) {
+  ensureClient();
+  if (!supabase) throw new Error("Supabase 未配置");
+  const ext = (file.name.split(".").pop() || "png").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const path = "pay-qr." + ext;
+  const { error } = await supabase.storage
+    .from("dish-images")
+    .upload(path, file, { upsert: true, contentType: file.type || "image/png" });
+  if (error) throw error;
+  const { data } = supabase.storage.from("dish-images").getPublicUrl(path);
+  return data.publicUrl;
+}
+
+// ---------------------- 站点配置（收款码等，所有顾客共享）----------------------
+export const SiteStore = {
+  async load() {
+    ensureClient();
+    if (!supabase) return null;
+    const { data, error } = await supabase.from("site").select("*").eq("id", 1).single();
+    if (error && error.code !== "PGRST116") { console.error("加载站点配置失败", error); return null; }
+    if (!data) return null;
+    return { payQr: data.pay_qr || "", payTitle: data.pay_title || "", shopName: data.shop_name || "" };
+  },
+  async save(meta) {
+    ensureClient();
+    if (!supabase) throw new Error("Supabase 未配置");
+    const { error } = await supabase.from("site").upsert({
+      id: 1,
+      pay_qr: meta.payQr || null,
+      pay_title: meta.payTitle || null,
+      shop_name: meta.shopName || null
+    });
+    if (error) throw error;
+    return meta;
+  }
+};
+
 // ---------------------- 支付（微信 Native 扫码付）----------------------
 // 调用 Supabase Edge Function `wechat-pay` 创建 Native 订单，返回 { code_url }；
 // 未部署 / 未配置密钥时返回 { demo:true }，前端降级为「模拟支付成功」。

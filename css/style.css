@@ -162,17 +162,26 @@ body {
 }
 .cartbar .total { flex: 1; font-size: 18px; font-weight: 700; }
 .cartbar .total small { font-size: 12px; color: #b9bdc4; font-weight: 400; }
-.cartbar .submit {
+/* 全局提交按钮（购物车底栏 / 抽屉内 / 支付弹窗通用） */
+.submit {
   background: var(--brand);
   color: #fff;
   border: none;
-  padding: 10px 22px;
-  border-radius: 999px;
-  font-size: 15px;
+  padding: 14px 26px;
+  border-radius: 12px;
+  font-size: 17px;
   font-weight: 700;
   cursor: pointer;
+  line-height: 1.2;
 }
-.cartbar .submit:disabled { background: #555b63; }
+.submit:disabled { background: #555b63; cursor: not-allowed; }
+
+/* 购物车底栏的提交按钮：圆角胶囊、占满右侧 */
+.cartbar .submit {
+  padding: 13px 26px;
+  border-radius: 999px;
+  font-size: 16px;
+}
 
 /* 购物车抽屉 */
 .drawer-mask {
@@ -228,6 +237,24 @@ body {
 .track .ok { font-size: 48px; }
 .track .no { font-size: 20px; font-weight: 700; margin: 10px 0; }
 .track .amount { color: var(--brand); font-size: 18px; font-weight: 700; }
+.track-items {
+  text-align: left;
+  max-width: 320px;
+  margin: 14px auto 4px;
+  background: var(--bg);
+  border-radius: 12px;
+  padding: 6px 12px;
+}
+.track-items .ti {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+}
+.track-items .ti:last-child { border-bottom: none; }
+.track-items .ti .n { color: var(--text); }
+.track-items .ti .p { color: var(--muted); }
 
 /* 醒目大单号：仅在支付成功后显示 */
 .seq-hero {
@@ -438,4 +465,10 @@ body.settings { background: #f5f6f8; }
 .scard .btn-ghost { width: 100%; margin-top: 10px; }
 .scard #msg { font-size: 13px; margin-top: 12px; min-height: 18px; text-align: center; }
 .back { display: block; text-align: center; margin: 18px auto 30px; color: var(--brand); text-decoration: none; font-size: 14px; }
+
+/* 设置页：收款码上传 */
+.qr-preview { margin: 10px 0 4px; min-height: 4px; }
+.qr-preview img { width: 200px; max-width: 100%; border-radius: 10px; border: 1px solid var(--line); display: block; }
+.scard input[type="file"] { font-size: 13px; color: var(--muted); }
+.scard .divider { border: none; border-top: 1px dashed var(--line); margin: 22px 0 6px; }
 

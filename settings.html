@@ -28,6 +28,20 @@
     <div id="msg"></div>
   </div>
 
+  <div class="scard">
+    <label>收款码（顾客扫码付款的二维码图片）</label>
+    <input id="payQrFile" type="file" accept="image/*" />
+    <div id="payQrPreview" class="qr-preview"></div>
+    <label>收款码说明（可选，如：微信收款 / 支付宝收款）</label>
+    <input id="payTitle" placeholder="微信收款" autocomplete="off" spellcheck="false" />
+    <div class="hint">
+      上传你自己的微信/支付宝<b>收款码</b>图片。顾客点「去支付」会看到此码，付款后点「我已支付」即出取单号。<br />
+      图片存于 Supabase 公开存储桶，<b>所有顾客手机都能看到</b>，无需逐台设置。
+    </div>
+    <button class="submit" id="saveQrBtn">上传并保存收款码</button>
+    <div id="qrMsg"></div>
+  </div>
+
   <a class="back" href="index.html">← 返回点餐</a>
 
   <script type="module" src="js/settings.js"></script>

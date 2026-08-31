@@ -109,3 +109,17 @@ create policy "dish-images public read"   on storage.objects for select to anon 
 create policy "dish-images public upload" on storage.objects for insert to anon with check (bucket_id = 'dish-images');
 create policy "dish-images public update" on storage.objects for update to anon using (bucket_id = 'dish-images');
 create policy "dish-images public delete" on storage.objects for delete to anon using (bucket_id = 'dish-images');
+
+-- 7) 站点配置（收款码等，所有顾客共享）。在已运行过上面脚本的基础上「追加执行」这一段即可。
+create table if not exists site (
+  id         int         primary key,
+  pay_qr     text,
+  pay_title  text,
+  shop_name  text
+);
+alter table site enable row level security;
+drop policy if exists "site public read"  on site;
+drop policy if exists "site public write" on site;
+create policy "site public read"  on site for select using (true);
+create policy "site public write" on site for insert with check (true);
+create policy "site public write" on site for update using (true);

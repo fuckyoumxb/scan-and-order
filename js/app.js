@@ -1,5 +1,5 @@
 import { MENU as FALLBACK_MENU, STATUS, STATUS_FLOW } from "./menu.js";
-import { OrderStore, MenuStore, createPay, paySuccess } from "./api.js";
+import { OrderStore, MenuStore, createPay, paySuccess, SiteStore } from "./api.js";
 import QRCode from "https://esm.sh/qrcode@1.5.3";
 
 // 线上点餐：不再按桌号。下单后订单自动获得「今日第 N 单」序号（由数据库触发器分配）。
@@ -7,6 +7,7 @@ let MENU = FALLBACK_MENU;
 const cart = {};
 let currentOrderId = null;
 let addingToOrderId = null;
+let SITE = null; // 站点配置（收款码等），所有顾客共享
 
 // 序号格式化为 4 位补零，如 1 -> "0001"
 function fmtSeq(seq) {
@@ -192,9 +193,14 @@ function renderTrack(order) {
   }
   document.getElementById("trackNo").textContent = paid
     ? "支付成功 · 请凭单号取餐"
-    : "订单已提交，请完成支付";
+    : "订单已提交成功 ✓";
   document.getElementById("trackAmount").textContent = `共 ${order.count} 件 · 合计 ¥${order.total}`;
   document.getElementById("paidBadge").classList.toggle("hidden", !paid);
+  // 订单明细（确认已点）
+  const itemsEl = document.getElementById("trackItems");
+  itemsEl.innerHTML = (order.items || []).map((it) =>
+    `<div class="ti"><span class="n">${it.name} ×${it.qty}</span><span class="p">¥${it.price * it.qty}</span></div>`
+  ).join("");
   const steps = document.getElementById("trackSteps");
   steps.innerHTML = "";
   const cur = STATUS_FLOW.indexOf(order.status);
@@ -228,21 +234,37 @@ document.getElementById("payBtn").onclick = async () => {
   if (!currentOrderId) return;
   document.getElementById("payMask").classList.add("open");
   document.getElementById("payDrawer").classList.add("open");
-  const r = await createPay(currentOrderId);
-  if (r.code_url) {
+  const mockBtn = document.getElementById("payMock");
+  if (SITE && SITE.payQr) {
+    // 自有收款码模式：展示店主收款码，顾客付款后点「我已支付」
     document.getElementById("payDemo").classList.add("hidden");
-    document.getElementById("payMock").classList.add("hidden");
-    try {
-      document.getElementById("payQr").src = await QRCode.toDataURL(r.code_url, { width: 220, margin: 1 });
-    } catch (e) { document.getElementById("payQr").alt = "二维码生成失败"; }
-    document.getElementById("payTip").textContent = "请用微信「扫一扫」完成支付";
+    const qr = document.getElementById("payQr");
+    qr.src = SITE.payQr;
+    qr.alt = SITE.payTitle || "收款码";
+    document.getElementById("payTip").textContent =
+      (SITE.payTitle ? SITE.payTitle + " · " : "") + "请长按或扫一扫上方收款码完成支付";
+    mockBtn.textContent = "我已支付 ✓";
+    mockBtn.classList.remove("hidden");
+    mockBtn.dataset.mode = "qr";
   } else {
-    // 演示模式（未部署微信支付 Edge Function / 未配置密钥）
-    document.getElementById("payDemo").classList.remove("hidden");
-    document.getElementById("payMock").classList.remove("hidden");
-    document.getElementById("payQr").removeAttribute("src");
-    document.getElementById("payQr").alt = "演示模式";
-    document.getElementById("payTip").textContent = "演示模式：未接入微信支付";
+    // 微信 Native 扫码付（需部署 wechat-pay Edge Function）；否则降级演示
+    const r = await createPay(currentOrderId);
+    if (r.code_url) {
+      document.getElementById("payDemo").classList.add("hidden");
+      mockBtn.classList.add("hidden");
+      try {
+        document.getElementById("payQr").src = await QRCode.toDataURL(r.code_url, { width: 220, margin: 1 });
+      } catch (e) { document.getElementById("payQr").alt = "二维码生成失败"; }
+      document.getElementById("payTip").textContent = "请用微信「扫一扫」完成支付";
+    } else {
+      document.getElementById("payDemo").classList.remove("hidden");
+      mockBtn.textContent = "模拟支付成功";
+      mockBtn.classList.remove("hidden");
+      mockBtn.dataset.mode = "demo";
+      document.getElementById("payQr").removeAttribute("src");
+      document.getElementById("payQr").alt = "演示模式";
+      document.getElementById("payTip").textContent = "演示模式：未接入微信支付";
+    }
   }
 };
 document.getElementById("payClose").onclick = closePay;
@@ -253,6 +275,7 @@ function closePay() {
 }
 document.getElementById("payMock").onclick = async () => {
   if (!currentOrderId) return;
+  // 自有收款码模式与演示模式，均由顾客确认/模拟后置 paid=true，触发取单号显示
   await paySuccess(currentOrderId);
   closePay();
   renderTrack(OrderStore.get(currentOrderId));
@@ -304,5 +327,10 @@ if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
 }
 
+async function initSite() {
+  try { SITE = await SiteStore.load(); } catch (e) { SITE = null; }
+}
+
 initMenu();
+initSite();
 updateCart();
