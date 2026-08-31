@@ -9,26 +9,31 @@
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body class="settings">
-  <div class="shead">⚙️ Supabase 连接设置</div>
+  <div class="shead">⚙️ 商家设置</div>
+
+  <div class="ok-banner" id="cfgStatus">Supabase 连接：检测中…</div>
 
   <div class="scard">
+    <div class="sec-title">① Supabase 数据库（已自动配置，无需填写）</div>
     <label>Project URL</label>
-    <input id="url" placeholder="https://xxxx.supabase.co" autocomplete="off" spellcheck="false" />
+    <input id="url" placeholder="https://xxxx.supabase.co" autocomplete="off" spellcheck="false" readonly />
 
     <label>anon public key</label>
-    <input id="key" placeholder="eyJhbGciOi..." autocomplete="off" spellcheck="false" />
+    <input id="key" placeholder="eyJhbGciOi..." autocomplete="off" spellcheck="false" readonly />
 
     <div class="hint">
-      在 Supabase 控制台 → <b>Project Settings → API</b> 获取。<br />
-      此信息仅保存在<b>本机浏览器</b>（localStorage），不会上传给任何人，刷新/换设备需重新填写。
+      上面的配置已经<b>写进网站代码</b>并部署好了，顾客扫码即用，<b>你一般不用动它</b>。<br />
+      只有在你想<b>切换到另一个 Supabase 项目</b>时，才需要取消只读、改完点「保存并连接」。
     </div>
 
-    <button class="submit" id="saveBtn">保存并连接</button>
-    <button class="btn-ghost" id="testBtn">仅测试连接</button>
+    <button class="submit" id="editCfgBtn">修改 Supabase 配置</button>
+    <button class="submit hidden" id="saveBtn">保存并连接</button>
+    <button class="btn-ghost hidden" id="testBtn">仅测试连接</button>
     <div id="msg"></div>
   </div>
 
   <div class="scard">
+    <div class="sec-title">② 收款码（顾客付款时显示的二维码）</div>
     <label>收款码（顾客扫码付款的二维码图片）</label>
     <input id="payQrFile" type="file" accept="image/*" />
     <div id="payQrPreview" class="qr-preview"></div>

@@ -1,13 +1,37 @@
-// 设置页：填写 Supabase URL / anon key，存 localStorage 并测试连接；并管理收款码。
+// 设置页：Supabase 配置已写进代码（FALLBACK_CONFIG），一般无需填写；并管理收款码。
 import { getConfig, connect, uploadPayQr, SiteStore } from "./api.js";
 
 const urlEl = document.getElementById("url");
 const keyEl = document.getElementById("key");
 const msgEl = document.getElementById("msg");
+const cfgStatusEl = document.getElementById("cfgStatus");
+const editCfgBtn = document.getElementById("editCfgBtn");
+const saveBtn = document.getElementById("saveBtn");
+const testBtn = document.getElementById("testBtn");
 
+// Supabase 配置已随代码部署，默认只读展示，避免误改/误填。
 const saved = getConfig();
 urlEl.value = saved.url || "";
 keyEl.value = saved.anonKey || "";
+if (saved.url && saved.anonKey) {
+  cfgStatusEl.textContent = "✅ Supabase 已自动配置（无需填写）";
+  cfgStatusEl.classList.add("ok");
+} else {
+  cfgStatusEl.textContent = "⚠️ Supabase 未配置，请点「修改 Supabase 配置」填写";
+  cfgStatusEl.classList.add("warn");
+}
+
+// 仅在想切换项目时解锁输入框
+editCfgBtn.onclick = () => {
+  urlEl.readOnly = false;
+  keyEl.readOnly = false;
+  urlEl.classList.add("editing");
+  keyEl.classList.add("editing");
+  editCfgBtn.classList.add("hidden");
+  saveBtn.classList.remove("hidden");
+  testBtn.classList.remove("hidden");
+  setMsg("已可编辑，修改后点「保存并连接」", true);
+};
 
 function setMsg(text, ok) {
   msgEl.textContent = text;
