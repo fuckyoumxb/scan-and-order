@@ -15,6 +15,11 @@ const FALLBACK_CONFIG = {
   anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6a2tzYW9va2xhdHhncmlhY2V4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgxODE1NzksImV4cCI6MjEwMzc1NzU3OX0.1y08DpM1XVajZCvV45IBm49XJlVJYt9NPydCuwja9P8"
 };
 
+// ⚠️ 兜底收款码：若数据库里没上传收款码（site.pay_qr 为空），顾客端会回退显示这张图。
+//    把下方空字符串替换成你的收款码图片 base64（形如 data:image/png;base64,iVBOR...）。
+//    这样即使上传功能暂时用不了，顾客也能付钱。留空则按原逻辑提示「未配置收款码」。
+const FALLBACK_PAY_QR = "";
+
 export function getConfig() {
   try {
     const raw = localStorage.getItem(LS_KEY);

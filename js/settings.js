@@ -1,6 +1,12 @@
 // 设置页：Supabase 配置已写进代码（FALLBACK_CONFIG），一般无需填写；并管理收款码。
 import { getConfig, connect, uploadPayQr, SiteStore } from "./api.js";
 
+// 兜底：若页面脚本出错导致按钮"没反应"，把错误显示出来，便于排查
+window.addEventListener("error", (ev) => {
+  const el = document.getElementById("qrMsg");
+  if (el) { el.textContent = "⚠️ 页面出错：" + (ev.message || (ev.error && ev.error.message) || "未知错误"); el.style.color = "#e4393c"; }
+});
+
 const urlEl = document.getElementById("url");
 const keyEl = document.getElementById("key");
 const msgEl = document.getElementById("msg");

@@ -1,5 +1,6 @@
 import { MENU as FALLBACK_MENU, STATUS, STATUS_FLOW } from "./menu.js";
 import { OrderStore, MenuStore, createPay, paySuccess, SiteStore } from "./api.js";
+import { FALLBACK_PAY_QR } from "./config.js";
 import QRCode from "https://esm.sh/qrcode@1.5.3";
 
 // 线上点餐：不再按桌号。下单后订单自动获得「今日第 N 单」序号（由数据库触发器分配）。
@@ -240,8 +241,9 @@ document.getElementById("payBtn").onclick = async () => {
   document.getElementById("payMask").classList.add("open");
   document.getElementById("payDrawer").classList.add("open");
   const mockBtn = document.getElementById("payMock");
-  // 确保站点配置已加载（含店主的收款码）
+  // 确保站点配置已加载（含店主的收款码）；数据库为空时回退到代码内置兜底收款码
   if (!SITE) { try { SITE = await SiteStore.load(); } catch (e) { SITE = null; } }
+  if (SITE && !SITE.payQr && FALLBACK_PAY_QR) SITE.payQr = FALLBACK_PAY_QR;
   if (SITE && SITE.payQr) {
     // 自有收款码模式：展示店主收款码，顾客付款后点「我已支付」
     document.getElementById("payDemo").classList.add("hidden");
@@ -340,6 +342,7 @@ if ("serviceWorker" in navigator) {
 
 async function initSite() {
   try { SITE = await SiteStore.load(); } catch (e) { SITE = null; }
+  if (SITE && !SITE.payQr && FALLBACK_PAY_QR) SITE.payQr = FALLBACK_PAY_QR;
 }
 
 initMenu();
