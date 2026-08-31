@@ -118,8 +118,10 @@ create table if not exists site (
   shop_name  text
 );
 alter table site enable row level security;
-drop policy if exists "site public read"  on site;
-drop policy if exists "site public write" on site;
-create policy "site public read"  on site for select using (true);
-create policy "site public write" on site for insert with check (true);
-create policy "site public write" on site for update using (true);
+drop policy if exists "site public write" on site;   -- 旧名兜底清理
+drop policy if exists "site public read"   on site;
+drop policy if exists "site public insert" on site;
+drop policy if exists "site public update" on site;
+create policy "site public read"   on site for select using (true);
+create policy "site public insert" on site for insert with check (true);
+create policy "site public update" on site for update using (true);
